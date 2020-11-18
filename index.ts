@@ -9,22 +9,29 @@ type Severity = 'info' | 'error'
 interface Options {
   source: string
   target: string
+  proxy: string
   logger?: Pick<Console, Severity>
 }
 
 class Client {
   source: string;
   target: string;
+  proxy: string;
   logger: Pick<Console, Severity>;
   events!: EventSource;
 
-  constructor ({ source, target, logger = console }: Options) {
+  constructor ({ source, target, proxy, logger = console }: Options) {
     this.source = source
     this.target = target
+    this.proxy = proxy
     this.logger = logger!
 
     if (!validator.isURL(this.source)) {
       throw new Error('The provided URL is invalid.')
+    }
+
+    if (this.proxy && !validator.isURL(this.proxy)) {
+      throw new Error('The provided proxy URL is invalid.')
     }
   }
 
@@ -69,7 +76,7 @@ class Client {
   }
 
   start () {
-    const events = new EventSource(this.source);
+    const events = this.proxy ? new EventSource(this.source, { proxy: this.proxy }) : new EventSource(this.source);
 
     // Reconnect immediately
     (events as any).reconnectInterval = 0 // This isn't a valid property of EventSource
